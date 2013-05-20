@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <inttypes.h>
 
 #include "xenctrl.h"
 
@@ -24,6 +25,8 @@ static int usage(const char* prog)
     printf("  share <domid> <gfn> <handle> <source> <source-gfn> <source-handle>\n");
     printf("                          - Share two pages.\n");
     printf("  unshare <domid> <gfn>   - Unshare a page by grabbing a writable map.\n");
+    printf("  share-all <domid> <source>\n");
+    printf("                          - Share all pages.\n");
     printf("  add-to-physmap <domid> <gfn> <source> <source-gfn> <source-handle>\n");
     printf("                          - Populate a page in a domain with a shared page.\n");
     printf("  debug-gfn <domid> <gfn> - Debug a particular domain and gfn.\n");
@@ -130,6 +133,56 @@ int main(int argc, const char** argv)
         if( map )
             munmap(map, 4096);
         R((int)!map);
+    }
+    else if( !strcasecmp(cmd, "share-all") )
+    {
+        domid_t domid;
+        domid_t source_domid;
+        uint64_t handle;
+        uint64_t source_handle;
+        uint64_t total_shared=0;
+        int ret;
+        uint64_t share_page;
+        int max_gfn, source_max_gfn;
+
+        if( argc != 4 )
+            return usage(argv[0]);
+
+        domid = strtol(argv[2], NULL, 0);
+        source_domid = strtol(argv[3], NULL, 0);
+
+        max_gfn=xc_domain_maximum_gpfn(xch, domid);
+        source_max_gfn=xc_domain_maximum_gpfn(xch, source_domid);
+
+        printf("Max GFN: 0x%"PRIx32". Max source GFN: 0x%"PRIx32"\n", max_gfn, source_max_gfn);
+
+        if(max_gfn != source_max_gfn) {
+            fprintf(stderr, "MAX GFN in source and destination domain doesn't match "
+                   "(source: 0x%"PRIx32", destination 0x%"PRIx32")\n", max_gfn, source_max_gfn);
+            return 1;
+        }
+
+        for(share_page=0;share_page<=max_gfn;++share_page) {
+
+            ret=xc_memshr_nominate_gfn(xch, domid, share_page, &handle);
+            if(ret<0) {
+                continue;
+            }
+
+            ret=xc_memshr_nominate_gfn(xch, source_domid, share_page, &source_handle);
+            if(ret<0) {
+                continue;
+            }
+
+            ret=xc_memshr_share_gfns(xch, source_domid, share_page, source_handle, domid, share_page, handle);
+
+            if(ret>=0) {
+                total_shared++;
+            }
+        }
+
+        printf("Shared pages: %"PRIu64"\n", total_shared);
+
     }
     else if( !strcasecmp(cmd, "add-to-physmap") )
     {
