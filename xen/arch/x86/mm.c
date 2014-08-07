@@ -2703,6 +2703,8 @@ int new_guest_cr3(unsigned long mfn)
     int rc;
     unsigned long old_base_mfn;
 
+    printk("New cr3 on domid %i\n", d->domain_id);
+
     if ( is_pv_32on64_domain(d) )
     {
         unsigned long gt_mfn = pagetable_get_pfn(curr->arch.guest_table);

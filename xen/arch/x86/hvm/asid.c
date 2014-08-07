@@ -100,8 +100,10 @@ void hvm_asid_flush_core(void)
     if ( data->disabled )
         return;
 
-    if ( likely(++data->core_asid_generation != 0) )
+    if ( likely(++data->core_asid_generation != 0) ) {
+        printk("HVM: ASID flushing, new ASID: 0x%lx\n", data->core_asid_generation);
         return;
+    }
 
     /*
      * ASID generations are 64 bit.  Overflow of generations never happens.
@@ -120,6 +122,8 @@ bool_t hvm_asid_handle_vmenter(struct hvm_vcpu_asid *asid)
      * Generation overruns are taken here, too. */
     if ( data->disabled )
         goto disabled;
+
+    printk("HVM: VMENTER ASID: 0x%lx. VCPU ASID: 0x%lx.\n", asid->generation, data->core_asid_generation);
 
     /* Test if VCPU has valid ASID. */
     if ( asid->generation == data->core_asid_generation )

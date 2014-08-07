@@ -1,0 +1,227 @@
+From xen-devel-bounces@lists.xen.org Thu Jul 17 06:12:14 2014
+Delivered-To: tamas.lengyel@zentific.com
+Received: by 10.216.1.195 with SMTP id 45csp61180wed; Thu, 17 Jul 2014
+ 06:12:14 -0700 (PDT)
+X-Received: by 10.50.25.71 with SMTP id a7mr27594064igg.17.1405602733618;
+ Thu, 17 Jul 2014 06:12:13 -0700 (PDT)
+Return-Path: <xen-devel-bounces@lists.xen.org>
+Received: from lists.xen.org (lists.xen.org. [50.57.142.19]) by
+ mx.google.com with ESMTPS id e3si32317090igx.4.2014.07.17.06.12.13 for
+ <multiple recipients> (version=TLSv1 cipher=RC4-SHA bits=128/128); Thu, 17
+ Jul 2014 06:12:13 -0700 (PDT)
+Received-SPF: none (google.com: xen-devel-bounces@lists.xen.org does not
+ designate permitted sender hosts) client-ip=50.57.142.19;
+Authentication-Results: mx.google.com; spf=neutral (google.com:
+ xen-devel-bounces@lists.xen.org does not designate permitted sender hosts)
+ smtp.mail=xen-devel-bounces@lists.xen.org
+Received: from localhost ([127.0.0.1] helo=lists.xen.org) by lists.xen.org
+ with esmtp (Exim 4.72) (envelope-from <xen-devel-bounces@lists.xen.org>) id
+ 1X7lSm-0001H8-1q; Thu, 17 Jul 2014 13:11:08 +0000
+Received: from mail6.bemta5.messagelabs.com ([195.245.231.135]) by
+ lists.xen.org with esmtp (Exim 4.72) (envelope-from
+ <Andrew.Cooper3@citrix.com>) id 1X7lSj-0001Fe-Q3 for
+ xen-devel@lists.xen.org; Thu, 17 Jul 2014 13:11:06 +0000
+Received: from [85.158.139.211:53520] by server-16.bemta-5.messagelabs.com
+ id D7/7E-31885-96BC7C35; Thu, 17 Jul 2014 13:11:05 +0000
+X-Env-Sender: Andrew.Cooper3@citrix.com
+X-Msg-Ref: server-8.tower-206.messagelabs.com!1405602661!16052158!3
+X-Originating-IP: [66.165.176.63]
+X-SpamReason: No, hits=0.0 required=7.0 tests=sa_preprocessor: 
+ VHJ1c3RlZCBJUDogNjYuMTY1LjE3Ni42MyA9PiAzMDYwNDg=\n
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Received: (qmail 25315 invoked from network); 17 Jul 2014 13:11:04 -0000
+Received: from smtp02.citrix.com (HELO SMTP02.CITRIX.COM) (66.165.176.63)
+ by server-8.tower-206.messagelabs.com with RC4-SHA encrypted SMTP; 17 Jul
+ 2014 13:11:04 -0000
+X-IronPort-AV: E=Sophos;i="5.01,678,1400025600"; d="scan'208";a="153733304"
+Received: from accessns.citrite.net (HELO FTLPEX01CL02.citrite.net)
+ ([10.9.154.239]) by FTLPIPO02.CITRIX.COM with ESMTP; 17 Jul 2014 13:10:42
+ +0000
+Received: from ukmail1.uk.xensource.com (10.80.16.128) by
+ smtprelay.citrix.com (10.13.107.79) with Microsoft SMTP Server id
+ 14.3.181.6; Thu, 17 Jul 2014 09:10:40 -0400
+Received: from andrewcoop.uk.xensource.com ([10.80.2.18]
+ helo=andrewcoop.uk.xensource.com.)	by ukmail1.uk.xensource.com with esmtp
+ (Exim 4.69)	(envelope-from <andrew.cooper3@citrix.com>)	id
+ 1X7lSK-0005pj-Qa; Thu, 17 Jul 2014 14:10:40 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+To: Xen-devel <xen-devel@lists.xen.org>
+Date: Thu, 17 Jul 2014 14:10:37 +0100
+Message-ID: <1405602637-8321-3-git-send-email-andrew.cooper3@citrix.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1405602637-8321-1-git-send-email-andrew.cooper3@citrix.com>
+References: <1405602637-8321-1-git-send-email-andrew.cooper3@citrix.com>
+MIME-Version: 1.0
+X-DLP: MIA1
+Cc: Andrew Cooper <andrew.cooper3@citrix.com>, Tim Deegan <tim@xen.org>,
+ Andres Lagar-Cavilla <andres@lagarcavilla.org>, Jan Beulich
+ <JBeulich@suse.com>
+Subject: [Xen-devel] [PATCH 2/2] Xen/mem_event: Prevent underflow of vcpu
+ pause counts
+X-BeenThere: xen-devel@lists.xen.org
+X-Mailman-Version: 2.1.13
+Precedence: list
+List-Id: Xen developer discussion <xen-devel.lists.xen.org>
+List-Unsubscribe: <http://lists.xen.org/cgi-bin/mailman/options/xen-devel>,
+ <mailto:xen-devel-request@lists.xen.org?subject=unsubscribe>
+List-Post: <mailto:xen-devel@lists.xen.org>
+List-Help: <mailto:xen-devel-request@lists.xen.org?subject=help>
+List-Subscribe: <http://lists.xen.org/cgi-bin/mailman/listinfo/xen-devel>,
+ <mailto:xen-devel-request@lists.xen.org?subject=subscribe>
+Content-Type: text/plain; charset="us-ascii"
+Sender: xen-devel-bounces@lists.xen.org
+Errors-To: xen-devel-bounces@lists.xen.org
+X-Evolution-Source: 1405632764.6771.2@l1
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Andrew Cooper <andrew.cooper3@citrix.com>
+CC: Jan Beulich <JBeulich@suse.com>
+CC: Tim Deegan <tim@xen.org>
+CC: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+---
+ xen/arch/x86/hvm/hvm.c          |    2 +-
+ xen/arch/x86/mm/mem_event.c     |   14 ++++++++++++++
+ xen/arch/x86/mm/mem_sharing.c   |    4 ++--
+ xen/arch/x86/mm/p2m.c           |    8 ++++----
+ xen/include/asm-x86/mem_event.h |    3 +++
+ xen/include/xen/sched.h         |    2 ++
+ 6 files changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/xen/arch/x86/hvm/hvm.c b/xen/arch/x86/hvm/hvm.c
+index ef2411c..efd79b8 100644
+--- a/xen/arch/x86/hvm/hvm.c
++++ b/xen/arch/x86/hvm/hvm.c
+@@ -6113,7 +6113,7 @@ static int hvm_memory_event_traps(long p, uint32_t reason,
+     if ( (p & HVMPME_MODE_MASK) == HVMPME_mode_sync ) 
+     {
+         req.flags |= MEM_EVENT_FLAG_VCPU_PAUSED;    
+-        vcpu_pause_nosync(v);   
++        mem_event_vcpu_pause(v);
+     }
+ 
+     req.gfn = value;
+diff --git a/xen/arch/x86/mm/mem_event.c b/xen/arch/x86/mm/mem_event.c
+index 40ae841..ef5197c 100644
+--- a/xen/arch/x86/mm/mem_event.c
++++ b/xen/arch/x86/mm/mem_event.c
+@@ -663,6 +663,20 @@ int mem_event_domctl(struct domain *d, xen_domctl_mem_event_op_t *mec,
+     return rc;
+ }
+ 
++void mem_event_vcpu_pause(struct vcpu *v)
++{
++    ASSERT(v == current);
++
++    /* Ensure we don't try to repeatedly pause the same vcpu. */
++    BUG_ON(test_and_set_bool(v->paused_for_mem_event) != 0);
++    vcpu_pause_nosync(v);
++}
++
++void mem_event_vcpu_unpause(struct vcpu *v)
++{
++    if ( test_and_clear_bool(v->paused_for_mem_event) )
++        vcpu_unpause(v);
++}
+ 
+ /*
+  * Local variables:
+diff --git a/xen/arch/x86/mm/mem_sharing.c b/xen/arch/x86/mm/mem_sharing.c
+index ec99266..79188b9 100644
+--- a/xen/arch/x86/mm/mem_sharing.c
++++ b/xen/arch/x86/mm/mem_sharing.c
+@@ -568,7 +568,7 @@ int mem_sharing_notify_enomem(struct domain *d, unsigned long gfn,
+     if ( v->domain == d )
+     {
+         req.flags = MEM_EVENT_FLAG_VCPU_PAUSED;
+-        vcpu_pause_nosync(v);
++        mem_event_vcpu_pause(v);
+     }
+ 
+     req.p2mt = p2m_ram_shared;
+@@ -609,7 +609,7 @@ int mem_sharing_sharing_resume(struct domain *d)
+ 
+         /* Unpause domain/vcpu */
+         if ( rsp.flags & MEM_EVENT_FLAG_VCPU_PAUSED )
+-            vcpu_unpause(v);
++            mem_event_vcpu_unpause(v);
+     }
+ 
+     return 0;
+diff --git a/xen/arch/x86/mm/p2m.c b/xen/arch/x86/mm/p2m.c
+index f213a39..2c7bc0f 100644
+--- a/xen/arch/x86/mm/p2m.c
++++ b/xen/arch/x86/mm/p2m.c
+@@ -1158,7 +1158,7 @@ void p2m_mem_paging_populate(struct domain *d, unsigned long gfn)
+     /* Pause domain if request came from guest and gfn has paging type */
+     if ( p2m_is_paging(p2mt) && v->domain == d )
+     {
+-        vcpu_pause_nosync(v);
++        mem_event_vcpu_pause(v);
+         req.flags |= MEM_EVENT_FLAG_VCPU_PAUSED;
+     }
+     /* No need to inform pager if the gfn is not in the page-out path */
+@@ -1319,7 +1319,7 @@ void p2m_mem_paging_resume(struct domain *d)
+         }
+         /* Unpause domain */
+         if ( rsp.flags & MEM_EVENT_FLAG_VCPU_PAUSED )
+-            vcpu_unpause(v);
++            mem_event_vcpu_unpause(v);
+     }
+ }
+ 
+@@ -1414,7 +1414,7 @@ bool_t p2m_mem_access_check(paddr_t gpa, bool_t gla_valid, unsigned long gla,
+ 
+     /* Pause the current VCPU */
+     if ( p2ma != p2m_access_n2rwx )
+-        vcpu_pause_nosync(v);
++        mem_event_vcpu_pause(v);
+ 
+     /* VCPU may be paused, return whether we promoted automatically */
+     return (p2ma == p2m_access_n2rwx);
+@@ -1440,7 +1440,7 @@ void p2m_mem_access_resume(struct domain *d)
+ 
+         /* Unpause domain */
+         if ( rsp.flags & MEM_EVENT_FLAG_VCPU_PAUSED )
+-            vcpu_unpause(v);
++            mem_event_vcpu_unpause(v);
+     }
+ }
+ 
+diff --git a/xen/include/asm-x86/mem_event.h b/xen/include/asm-x86/mem_event.h
+index 045ef9b..ed4481a 100644
+--- a/xen/include/asm-x86/mem_event.h
++++ b/xen/include/asm-x86/mem_event.h
+@@ -66,6 +66,9 @@ int do_mem_event_op(int op, uint32_t domain, void *arg);
+ int mem_event_domctl(struct domain *d, xen_domctl_mem_event_op_t *mec,
+                      XEN_GUEST_HANDLE_PARAM(void) u_domctl);
+ 
++void mem_event_vcpu_pause(struct vcpu *v);
++void mem_event_vcpu_unpause(struct vcpu *v);
++
+ #endif /* __MEM_EVENT_H__ */
+ 
+ 
+diff --git a/xen/include/xen/sched.h b/xen/include/xen/sched.h
+index 2f876f5..ea33b7d 100644
+--- a/xen/include/xen/sched.h
++++ b/xen/include/xen/sched.h
+@@ -199,6 +199,8 @@ struct vcpu
+     bool_t           paused_for_shutdown;
+     /* VCPU need affinity restored */
+     bool_t           affinity_broken;
++    /* VCPU paused for mem event reply. */
++    bool_t           paused_for_mem_event;
+ 
+ 
+     /*
+-- 
+1.7.10.4
+
+
+_______________________________________________
+Xen-devel mailing list
+Xen-devel@lists.xen.org
+http://lists.xen.org/xen-devel
+

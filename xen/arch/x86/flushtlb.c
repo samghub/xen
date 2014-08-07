@@ -80,11 +80,14 @@ void write_cr3(unsigned long cr3)
 
     t = pre_flush();
 
+    printk("TLB: flushing guest TLBs on write_cr3: 0x%lx\n", cr3);
+
     hvm_flush_guest_tlbs();
 
 #ifdef USER_MAPPINGS_ARE_GLOBAL
     {
         unsigned long cr4 = read_cr4();
+        printk("TLB: USER_MAPPINGS_ARE_GLOBAL is enabled, flipping CR4.PGE\n");
         write_cr4(cr4 & ~X86_CR4_PGE);
         asm volatile ( "mov %0, %%cr3" : : "r" (cr3) : "memory" );
         write_cr4(cr4);
