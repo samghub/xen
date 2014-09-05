@@ -1,0 +1,19 @@
+sudo: required
+language: c
+compiler:
+- gcc
+
+script: ./build.sh
+
+cache: apt
+
+env:
+  - BUILD_ARCH=x86   BUILD_TOOLS=yes
+  - BUILD_ARCH=x86   BUILD_XEN=yes
+  - BUILD_ARCH=x86   BUILD_XEN_WITH_XSM=yes
+  - BUILD_ARCH=arm32 BUILD_XEN=yes
+  - BUILD_ARCH=arm32 BUILD_XEN_WITH_XSM=yes
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y libc6-dev-i386 gcc-multilib bcc bin86 gawk libcurl3 libcurl4-openssl-dev bzip2 module-init-tools pciutils-dev zlib1g-dev python python-dev python-twisted libncurses5-dev patch libvncserver-dev libsdl-dev iasl libbz2-dev e2fslibs-dev git-core uuid-dev ocaml libx11-dev bison flex ocaml-findlib xz-utils gettext libyajl-dev libpixman-1-dev libaio-dev libfdt-dev texinfo
