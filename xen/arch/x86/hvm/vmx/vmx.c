@@ -2966,6 +2966,13 @@ void vmx_vmexit_handler(struct cpu_user_regs *regs)
     }
     case EXIT_REASON_CR_ACCESS:
     {
+        if ( paging_mode_hap(v->domain) )
+        {
+            struct hvm_vcpu_asid *p_asid = &current->arch.hvm_vcpu.n1asid;
+            gdprintk(XENLOG_WARNING, "VMEXIT BECAUSE CR ACCESS ON HAP DOMAIN. ASID: %"PRIu32". GENERATION: %"PRIu64"\n",
+                     p_asid->asid, p_asid->generation);
+        }
+
         __vmread(EXIT_QUALIFICATION, &exit_qualification);
         if ( vmx_cr_access(exit_qualification) == X86EMUL_OKAY )
             update_guest_eip(); /* Safe: MOV Cn, LMSW, CLTS */
