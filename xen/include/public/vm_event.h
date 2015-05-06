@@ -119,6 +119,8 @@
 #define VM_EVENT_REASON_SINGLESTEP              7
 /* An event has been requested via HVMOP_guest_request_vm_event. */
 #define VM_EVENT_REASON_GUEST_REQUEST           8
+/* Privileged call executed (e.g. SMC) */
+#define VM_EVENT_REASON_PRIVILEGED_CALL         9
 
 /* Supported values for the vm_event_write_ctrlreg index. */
 #define VM_EVENT_X86_CR0    0
@@ -164,6 +166,30 @@ struct vm_event_regs_x86 {
     uint64_t gs_base;
     uint32_t cs_arbytes;
     uint32_t _pad;
+};
+
+struct vm_event_regs_arm {
+    /*       Aarch64       Aarch32 */
+    uint64_t x0;       /*  r0_usr  */
+    uint64_t x1;       /*  r1_usr  */
+    uint64_t x2;       /*  r2_usr  */
+    uint64_t x3;       /*  r3_usr  */
+    uint64_t x4;       /*  r4_usr  */
+    uint64_t x5;       /*  r5_usr  */
+    uint64_t x6;       /*  r6_usr  */
+    uint64_t x7;       /*  r7_usr  */
+    uint64_t x8;       /*  r8_usr  */
+    uint64_t x9;       /*  r9_usr  */
+    uint64_t x10;      /*  r10_usr */
+    uint64_t lr;       /*  lr_usr  */
+    uint64_t sp_el0;   /*  sp_usr  */
+    uint64_t sp_el1;   /*  sp_svc  */
+    uint32_t spsr_el1; /*  spsr_svc */
+    uint64_t fp;
+    uint64_t pc;
+    uint32_t cpsr;
+    uint64_t ttbr0;
+    uint64_t ttbr1;
 };
 
 /*
@@ -254,6 +280,7 @@ typedef struct vm_event_st {
     union {
         union {
             struct vm_event_regs_x86 x86;
+            struct vm_event_regs_arm arm;
         } regs;
 
         struct vm_event_emul_read_data emul_read_data;

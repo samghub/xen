@@ -818,7 +818,6 @@ int vm_event_monitor_traps(struct vcpu *v, uint8_t sync,
         req->altp2m_idx = altp2m_vcpu_idx(v);
     }
 
-    vm_event_fill_regs(req);
     vm_event_put_request(d, &d->vm_event->monitor, req);
 
     return 1;

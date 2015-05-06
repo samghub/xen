@@ -47,6 +47,7 @@ bool_t hvm_event_cr(unsigned int index, unsigned long value, unsigned long old)
             .u.write_ctrlreg.old_value = old
         };
 
+        vm_event_fill_regs(&req);
         vm_event_monitor_traps(curr, sync, &req);
         return 1;
     }
@@ -115,6 +116,7 @@ int hvm_event_breakpoint(unsigned long rip,
     }
 
     req.vcpu_id = curr->vcpu_id;
+    vm_event_fill_regs(&req);
 
     return vm_event_monitor_traps(curr, 1, &req);
 }
