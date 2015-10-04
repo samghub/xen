@@ -181,6 +181,25 @@ int xc_memshr_add_to_physmap(xc_interface *xch,
     return xc_memshr_memop(xch, source_domain, &mso);
 }
 
+int xc_memshr_bulk_share(xc_interface *xch,
+                         domid_t source_domain,
+                         domid_t client_domain,
+                         uint64_t *shared)
+{
+    int rc;
+    xen_mem_sharing_op_t mso;
+
+    memset(&mso, 0, sizeof(mso));
+
+    mso.op = XENMEM_sharing_op_bulk_share;
+    mso.u.bulk.client_domain = client_domain;
+
+    rc = xc_memshr_memop(xch, source_domain, &mso);
+    if ( !rc && shared ) *shared = mso.u.bulk.shared;
+
+    return rc;
+}
+
 int xc_memshr_domain_resume(xc_interface *xch,
                             domid_t domid)
 {

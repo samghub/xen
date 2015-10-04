@@ -1294,6 +1294,54 @@ int relinquish_shared_pages(struct domain *d)
     return rc;
 }
 
+static int bulk_share(struct domain *d, struct domain *cd, unsigned long limit,
+                      struct mem_sharing_op_bulk *bulk)
+{
+    int rc = 0;
+    shr_handle_t sh, ch;
+
+    while( limit > bulk->start )
+    {
+        /*
+         * We only break out if we run out of memory as individual pages may
+         * legitimately be unsharable and we just want to skip over those.
+         */
+        rc = mem_sharing_nominate_page(d, bulk->start, 0, &sh);
+        if ( rc == -ENOMEM )
+            break;
+        if ( !rc )
+        {
+            rc = mem_sharing_nominate_page(cd, bulk->start, 0, &ch);
+            if ( rc == -ENOMEM )
+                break;
+            if ( !rc )
+            {
+                /* If we get here this should be guaranteed to succeed. */
+                rc = mem_sharing_share_pages(d, bulk->start, sh,
+                                             cd, bulk->start, ch);
+                ASSERT(!rc);
+            }
+        }
+
+        /* Check for continuation if it's not the last iteration. */
+        if ( limit > ++bulk->start && hypercall_preempt_check() )
+        {
+            rc = 1;
+            break;
+        }
+    }
+
+    /*
+     * We only propagate -ENOMEM as individual pages may fail with -EINVAL,
+     * and for bulk sharing we only care if -ENOMEM was encountered so we reset
+     * rc here.
+     */
+    if ( rc < 0 && rc != -ENOMEM )
+        rc = 0;
+
+    return rc;
+}
+
 int mem_sharing_memop(XEN_GUEST_HANDLE_PARAM(xen_mem_sharing_op_t) arg)
 {
     int rc;
@@ -1463,6 +1511,79 @@ int mem_sharing_memop(XEN_GUEST_HANDLE_PARAM(xen_mem_sharing_op_t) arg)
             cgfn    = mso.u.share.client_gfn;
 
             rc = mem_sharing_add_to_physmap(d, sgfn, sh, cd, cgfn); 
+
+            rcu_unlock_domain(cd);
+        }
+        break;
+
+        case XENMEM_sharing_op_bulk_share:
+        {
+            unsigned long max_sgfn, max_cgfn;
+            struct domain *cd;
+
+            rc = -EINVAL;
+            if( mso.u.bulk._pad[0] || mso.u.bulk._pad[1] || mso.u.bulk._pad[2] )
+                goto out;
+
+            if ( !mem_sharing_enabled(d) )
+                goto out;
+
+            rc = rcu_lock_live_remote_domain_by_id(mso.u.bulk.client_domain,
+                                                   &cd);
+            if ( rc )
+                goto out;
+
+            /*
+             * We reuse XENMEM_sharing_op_share XSM check here as this is essentially
+             * the same concept repeated over multiple pages.
+             */
+            rc = xsm_mem_sharing_op(XSM_DM_PRIV, d, cd, XENMEM_sharing_op_share);
+            if ( rc )
+            {
+                rcu_unlock_domain(cd);
+                goto out;
+            }
+
+            if ( !mem_sharing_enabled(cd) )
+            {
+                rcu_unlock_domain(cd);
+                rc = -EINVAL;
+                goto out;
+            }
+
+            if ( !atomic_read(&d->pause_count) ||
+                 !atomic_read(&cd->pause_count) )
+            {
+                rcu_unlock_domain(cd);
+                rc = -EINVAL;
+                goto out;
+            }
+
+            max_sgfn = domain_get_maximum_gpfn(d);
+            max_cgfn = domain_get_maximum_gpfn(cd);
+
+            if ( max_sgfn != max_cgfn || max_sgfn < mso.u.bulk.start )
+            {
+                rcu_unlock_domain(cd);
+                rc = -EINVAL;
+                goto out;
+            }
+
+            rc = bulk_share(d, cd, max_sgfn + 1, &mso.u.bulk);
+            if ( rc > 0 )
+            {
+                if ( __copy_to_guest(arg, &mso, 1) )
+                    rc = -EFAULT;
+                else
+                    rc = hypercall_create_continuation(__HYPERVISOR_memory_op,
+                                                       "lh", XENMEM_sharing_op,
+                                                       arg);
+            }
+            else
+            {
+                mso.u.bulk.start = 0;
+                mso.u.bulk.shared = atomic_read(&cd->shr_pages);
+            }
 
             rcu_unlock_domain(cd);
         }

@@ -2327,6 +2327,21 @@ int xc_memshr_add_to_physmap(xc_interface *xch,
                     domid_t client_domain,
                     unsigned long client_gfn);
 
+/* Allows to deduplicate the entire memory of a client domain in bulk. Using
+ * this function is equivalent of calling xc_memshr_nominate_gfn for each gfn
+ * in the two domains followed by xc_memshr_share_gfns. If successfull,
+ * returns the number of shared pages in 'shared'. Both domains must be paused.
+ *
+ * May fail with -EINVAL if the source and client domain have different
+ * memory size or if memory sharing is not enabled on either of the domains.
+ * May also fail with -ENOMEM if there isn't enough memory available to store
+ * the sharing metadata before deduplication can happen.
+ */
+int xc_memshr_bulk_share(xc_interface *xch,
+                         domid_t source_domain,
+                         domid_t client_domain,
+                         uint64_t *shared);
+
 /* Debug calls: return the number of pages referencing the shared frame backing
  * the input argument. Should be one or greater. 
  *

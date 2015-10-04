@@ -465,6 +465,7 @@ DEFINE_XEN_GUEST_HANDLE(xen_mem_access_op_t);
 #define XENMEM_sharing_op_debug_gref        5
 #define XENMEM_sharing_op_add_physmap       6
 #define XENMEM_sharing_op_audit             7
+#define XENMEM_sharing_op_bulk_share        8
 
 #define XENMEM_SHARING_OP_S_HANDLE_INVALID  (-10)
 #define XENMEM_SHARING_OP_C_HANDLE_INVALID  (-9)
@@ -500,7 +501,19 @@ struct xen_mem_sharing_op {
             uint64_aligned_t client_gfn;    /* IN: the client gfn */
             uint64_aligned_t client_handle; /* IN: handle to the client page */
             domid_t  client_domain; /* IN: the client domain id */
-        } share; 
+        } share;
+        struct mem_sharing_op_bulk {         /* OP_BULK_SHARE */
+            uint64_aligned_t start;          /* IN: start gfn. Set to 0 for
+                                                full deduplication. Field is
+                                                reset to 0 when hypercall
+                                                completes */
+            uint64_aligned_t shared;         /* OUT: the number of gfns
+                                                that are shared after this
+                                                operation, including pages
+                                                that were already shared */
+            domid_t client_domain;           /* IN: the client domain id */
+            uint16_t _pad[3];
+        } bulk;
         struct mem_sharing_op_debug {     /* OP_DEBUG_xxx */
             union {
                 uint64_aligned_t gfn;      /* IN: gfn to debug          */
