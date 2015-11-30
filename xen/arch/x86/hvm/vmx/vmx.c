@@ -3067,10 +3067,11 @@ void vmx_vmexit_handler(struct cpu_user_regs *regs)
                 domain_pause_for_debugger();
                 break;
             }
-            else {
+            else
+            {
                 int handled = hvm_event_int3(regs->eip);
-                
-                if ( handled < 0 ) 
+
+                if ( handled < 0 )
                 {
                     struct hvm_trap trap = {
                         .vector = TRAP_int3,

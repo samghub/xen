@@ -146,7 +146,7 @@ void hvm_event_guest_request(void)
 
 int hvm_event_int3(unsigned long rip)
 {
-    int rc = 0;
+    int rc = -ENOSYS;
     struct vcpu *curr = current;
 
     if ( curr->domain->arch.monitor.software_breakpoint_enabled )

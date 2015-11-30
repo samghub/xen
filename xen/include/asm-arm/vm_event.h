@@ -42,6 +42,12 @@ void vm_event_toggle_singlestep(struct domain *d, struct vcpu *v)
 }
 
 static inline
+void vm_event_interrupt_emulate_check(struct vcpu *v, vm_event_response_t *rsp)
+{
+    /* Not supported on ARM. */
+}
+
+static inline
 void vm_event_register_write_resume(struct vcpu *v, vm_event_response_t *rsp)
 {
     /* Not supported on ARM. */

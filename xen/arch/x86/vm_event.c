@@ -20,6 +20,7 @@
 
 #include <xen/sched.h>
 #include <asm/hvm/hvm.h>
+#include <asm/hvm/support.h>    /* for HVM_DELIVER_NO_ERROR_CODE */
 #include <asm/vm_event.h>
 
 /* Implicitly serialized by the domctl lock. */
@@ -64,6 +65,16 @@ void vm_event_toggle_singlestep(struct domain *d, struct vcpu *v)
         return;
 
     hvm_toggle_singlestep(v);
+}
+
+void vm_event_interrupt_emulate_check(struct vcpu *v, vm_event_response_t *rsp)
+{
+    gdprintk(XENLOG_WARNING, "Checking flags on int3 response %u\n", rsp->flags);
+
+    if ( !!(rsp->flags & VM_EVENT_FLAG_EMULATE) &&
+         !!(rsp->flags & VM_EVENT_FLAG_SET_EMUL_READ_DATA) )
+        hvm_mem_access_emulate_one(EMUL_KIND_SET_CONTEXT, TRAP_invalid_op,
+                                   HVM_DELIVER_NO_ERROR_CODE);
 }
 
 void vm_event_register_write_resume(struct vcpu *v, vm_event_response_t *rsp)

@@ -40,6 +40,8 @@ void vm_event_cleanup_domain(struct domain *d);
 
 void vm_event_toggle_singlestep(struct domain *d, struct vcpu *v);
 
+void vm_event_interrupt_emulate_check(struct vcpu *v, vm_event_response_t *rsp);
+
 void vm_event_register_write_resume(struct vcpu *v, vm_event_response_t *rsp);
 
 void vm_event_set_registers(struct vcpu *v, vm_event_response_t *rsp);
