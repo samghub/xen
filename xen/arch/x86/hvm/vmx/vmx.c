@@ -58,6 +58,7 @@
 #include <asm/altp2m.h>
 #include <asm/event.h>
 #include <asm/monitor.h>
+#include <asm/vm_event.h>
 #include <public/arch-x86/cpuid.h>
 
 static bool_t __initdata opt_force_ept;
@@ -3069,7 +3070,22 @@ void vmx_vmexit_handler(struct cpu_user_regs *regs)
             }
             else
             {
-                int handled = hvm_event_int3(regs->eip);
+                int handled;
+                gdprintk(XENLOG_WARNING, "Checking for emulate flags for int3 response %u\n", v->arch.vm_event->emulate_flags);
+
+                if ( v->arch.vm_event && v->arch.vm_event->emulate_flags )
+                {
+                    /*enum emul_kind kind = EMUL_KIND_SET_CONTEXT;
+                    hvm_mem_access_emulate_one(kind, TRAP_invalid_op,
+                                               HVM_DELIVER_NO_ERROR_CODE);
+
+                    v->arch.vm_event->emulate_flags = 0;
+                    break;*/
+                    gdprintk(XENLOG_WARNING, "Have emulate flags for int3 response %u\n", v->arch.vm_event->emulate_flags);
+
+                }
+
+                handled = hvm_event_int3(regs->eip);
 
                 if ( handled < 0 )
                 {
