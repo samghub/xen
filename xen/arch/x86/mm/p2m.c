@@ -1614,8 +1614,8 @@ void p2m_mem_access_emulate_check(struct vcpu *v,
 
         v->arch.vm_event->emulate_flags = violation ? rsp->flags : 0;
 
-        if ( (rsp->flags & VM_EVENT_FLAG_SET_EMUL_READ_DATA) )
-            v->arch.vm_event->emul_read_data = rsp->data.emul_read_data;
+        if ( !!(rsp->flags & VM_EVENT_FLAG_SET_EMUL_READ_DATA) )
+            v->arch.vm_event->emul_buffer = rsp->data.emul_buffer;
     }
 }
 
@@ -1718,7 +1718,10 @@ bool_t p2m_mem_access_check(paddr_t gpa, unsigned long gla,
 
         if ( v->arch.vm_event->emulate_flags &
              VM_EVENT_FLAG_SET_EMUL_READ_DATA )
-            kind = EMUL_KIND_SET_CONTEXT;
+            kind = EMUL_KIND_SET_CONTEXT_DATA;
+        else if ( v->arch.vm_event->emulate_flags &
+             VM_EVENT_FLAG_SET_EMUL_INSN_DATA )
+            kind = EMUL_KIND_SET_CONTEXT_INSN;
         else if ( v->arch.vm_event->emulate_flags &
                   VM_EVENT_FLAG_EMULATE_NOWRITE )
             kind = EMUL_KIND_NOWRITE;

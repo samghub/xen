@@ -3071,18 +3071,15 @@ void vmx_vmexit_handler(struct cpu_user_regs *regs)
             else
             {
                 int handled;
-                gdprintk(XENLOG_WARNING, "Checking for emulate flags for int3 response %u\n", v->arch.vm_event->emulate_flags);
 
-                if ( v->arch.vm_event && v->arch.vm_event->emulate_flags )
+                if ( v->arch.vm_event &&
+                     !!(v->arch.vm_event->emulate_flags
+                        & VM_EVENT_FLAG_SET_EMUL_INSN_DATA) )
                 {
-                    /*enum emul_kind kind = EMUL_KIND_SET_CONTEXT;
-                    hvm_mem_access_emulate_one(kind, TRAP_invalid_op,
+                    hvm_mem_access_emulate_one(EMUL_KIND_SET_CONTEXT_INSN, TRAP_invalid_op,
                                                HVM_DELIVER_NO_ERROR_CODE);
-
                     v->arch.vm_event->emulate_flags = 0;
-                    break;*/
-                    gdprintk(XENLOG_WARNING, "Have emulate flags for int3 response %u\n", v->arch.vm_event->emulate_flags);
-
+                    break;
                 }
 
                 handled = hvm_event_int3(regs->eip);

@@ -71,11 +71,10 @@ void vm_event_interrupt_emulate_check(struct vcpu *v, vm_event_response_t *rsp)
     gdprintk(XENLOG_WARNING, "Checking flags on int3 response %u\n", rsp->flags);
 
     if ( !!(rsp->flags & VM_EVENT_FLAG_EMULATE) &&
-         !!(rsp->flags & VM_EVENT_FLAG_SET_EMUL_READ_DATA) )
+         !!(rsp->flags & VM_EVENT_FLAG_SET_EMUL_INSN_DATA) )
     {
-        gdprintk(XENLOG_WARNING, "Setting flags on int3 response %u\n", rsp->flags);
         v->arch.vm_event->emulate_flags = rsp->flags;
-        v->arch.vm_event->emul_read_data = rsp->data.emul_read_data;
+        v->arch.vm_event->emul_buffer = rsp->data.emul_buffer;
     }
 }
 

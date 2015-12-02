@@ -75,9 +75,9 @@ static int set_context_data(void *buffer, unsigned int size)
     if ( curr->arch.vm_event )
     {
         unsigned int safe_size =
-            min(size, curr->arch.vm_event->emul_read_data.size);
+            min(size, curr->arch.vm_event->emul_buffer.size);
 
-        memcpy(buffer, curr->arch.vm_event->emul_read_data.data, safe_size);
+        memcpy(buffer, curr->arch.vm_event->emul_buffer.data, safe_size);
         memset(buffer + safe_size, 0, size - safe_size);
         return X86EMUL_OKAY;
     }
@@ -792,7 +792,7 @@ static int hvmemul_read(
     struct hvm_emulate_ctxt *hvmemul_ctxt =
         container_of(ctxt, struct hvm_emulate_ctxt, ctxt);
 
-    if ( unlikely(hvmemul_ctxt->set_context) )
+    if ( unlikely(hvmemul_ctxt->set_context_data) )
         return set_context_data(p_data, bytes);
 
     return __hvmemul_read(
@@ -990,7 +990,7 @@ static int hvmemul_cmpxchg(
     struct hvm_emulate_ctxt *hvmemul_ctxt =
         container_of(ctxt, struct hvm_emulate_ctxt, ctxt);
 
-    if ( unlikely(hvmemul_ctxt->set_context) )
+    if ( unlikely(hvmemul_ctxt->set_context_data) )
     {
         int rc = set_context_data(p_new, bytes);
 
@@ -1083,7 +1083,7 @@ static int hvmemul_rep_outs(
     p2m_type_t p2mt;
     int rc;
 
-    if ( unlikely(hvmemul_ctxt->set_context) )
+    if ( unlikely(hvmemul_ctxt->set_context_data) )
         return hvmemul_rep_outs_set_context(src_seg, src_offset, dst_port,
                                             bytes_per_rep, reps, ctxt);
 
@@ -1193,7 +1193,7 @@ static int hvmemul_rep_movs(
     if ( buf == NULL )
         return X86EMUL_UNHANDLEABLE;
 
-    if ( unlikely(hvmemul_ctxt->set_context) )
+    if ( unlikely(hvmemul_ctxt->set_context_data) )
     {
         rc = set_context_data(buf, bytes);
 
@@ -1378,7 +1378,7 @@ static int hvmemul_read_io(
 
     *val = 0;
 
-    if ( unlikely(hvmemul_ctxt->set_context) )
+    if ( unlikely(hvmemul_ctxt->set_context_data) )
         return set_context_data(val, bytes);
 
     return hvmemul_do_pio_buffer(port, bytes, IOREQ_READ, val);
@@ -1708,6 +1708,15 @@ static int _hvm_emulate_one(struct hvm_emulate_ctxt *hvmemul_ctxt,
         memcpy(hvmemul_ctxt->insn_buf, vio->mmio_insn, vio->mmio_insn_bytes);
     }
 
+    /* We overwrite portions of the buffer now with the provided code */
+    if ( unlikely(hvmemul_ctxt->set_context_insn) )
+    {
+        unsigned int safe_size = min(hvmemul_ctxt->insn_buf_bytes,
+                                     curr->arch.vm_event->emul_buffer.size);
+
+        memcpy(hvmemul_ctxt->insn_buf, curr->arch.vm_event->emul_buffer.data, safe_size);
+    }
+
     hvmemul_ctxt->exn_pending = 0;
     vio->mmio_retry = 0;
 
@@ -1786,15 +1795,15 @@ void hvm_mem_access_emulate_one(enum emul_kind kind, unsigned int trapnr,
 
     hvm_emulate_prepare(&ctx, guest_cpu_user_regs());
 
-    switch ( kind )
-    {
-    case EMUL_KIND_NOWRITE:
+    if ( kind == EMUL_KIND_NOWRITE )
         rc = hvm_emulate_one_no_write(&ctx);
-        break;
-    case EMUL_KIND_SET_CONTEXT:
-        ctx.set_context = 1;
-        /* Intentional fall-through. */
-    default:
+    else
+    {
+         if ( kind == EMUL_KIND_SET_CONTEXT_DATA )
+            ctx.set_context_data = 1;
+         else if ( kind == EMUL_KIND_SET_CONTEXT_INSN )
+            ctx.set_context_insn = 1;
+
         rc = hvm_emulate_one(&ctx);
     }
 
@@ -1830,7 +1839,8 @@ void hvm_emulate_prepare(
     hvmemul_ctxt->ctxt.force_writeback = 1;
     hvmemul_ctxt->seg_reg_accessed = 0;
     hvmemul_ctxt->seg_reg_dirty = 0;
-    hvmemul_ctxt->set_context = 0;
+    hvmemul_ctxt->set_context_data = 0;
+    hvmemul_ctxt->set_context_insn = 0;
     hvmemul_get_seg_reg(x86_seg_cs, hvmemul_ctxt);
     hvmemul_get_seg_reg(x86_seg_ss, hvmemul_ctxt);
 }

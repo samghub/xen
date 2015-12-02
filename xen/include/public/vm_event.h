@@ -96,6 +96,10 @@
  * Requires the vCPU to be paused already (synchronous events only).
  */
 #define VM_EVENT_FLAG_SET_REGISTERS      (1 << 8)
+/*
+ * TODO
+ */
+#define VM_EVENT_FLAG_SET_EMUL_INSN_DATA (1 << 9)
 
 /*
  * Reasons for the vm event request
@@ -227,7 +231,7 @@ struct vm_event_sharing {
     uint32_t _pad;
 };
 
-struct vm_event_emul_read_data {
+struct vm_event_emul_buffer {
     uint32_t size;
     /* The struct is used in a union with vm_event_regs_x86. */
     uint8_t  data[sizeof(struct vm_event_regs_x86) - sizeof(uint32_t)];
@@ -256,7 +260,7 @@ typedef struct vm_event_st {
             struct vm_event_regs_x86 x86;
         } regs;
 
-        struct vm_event_emul_read_data emul_read_data;
+        struct vm_event_emul_buffer emul_buffer;
     } data;
 } vm_event_request_t, vm_event_response_t;
 

@@ -33,13 +33,15 @@ struct hvm_emulate_ctxt {
 
     uint32_t intr_shadow;
 
-    bool_t set_context;
+    bool_t set_context_data;
+    bool_t set_context_insn;
 };
 
 enum emul_kind {
     EMUL_KIND_NORMAL,
     EMUL_KIND_NOWRITE,
-    EMUL_KIND_SET_CONTEXT
+    EMUL_KIND_SET_CONTEXT_DATA,
+    EMUL_KIND_SET_CONTEXT_INSN
 };
 
 int hvm_emulate_one(
