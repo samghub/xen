@@ -77,6 +77,9 @@ static int set_context_data(void *buffer, unsigned int size)
         unsigned int safe_size =
             min(size, curr->arch.vm_event->emul_buffer.size);
 
+        gdprintk(XENLOG_WARNING, "Got buffer of size: %u. Request is for %u. Safe size: %u\n",
+                 curr->arch.vm_event->emul_buffer.size, size, safe_size);
+
         memcpy(buffer, curr->arch.vm_event->emul_buffer.data, safe_size);
         memset(buffer + safe_size, 0, size - safe_size);
         return X86EMUL_OKAY;
@@ -1686,7 +1689,14 @@ static int _hvm_emulate_one(struct hvm_emulate_ctxt *hvmemul_ctxt,
         pfec |= PFEC_user_mode;
 
     hvmemul_ctxt->insn_buf_eip = regs->eip;
-    if ( !vio->mmio_insn_bytes )
+
+    if ( unlikely(hvmemul_ctxt->set_context_insn) )
+    {
+        memcpy(hvmemul_ctxt->insn_buf, curr->arch.vm_event->emul_buffer.data,
+               curr->arch.vm_event->emul_buffer.size);
+        hvmemul_ctxt->insn_buf_bytes = curr->arch.vm_event->emul_buffer.size;
+    }
+    else if ( !vio->mmio_insn_bytes )
     {
         hvmemul_ctxt->insn_buf_bytes =
             hvm_get_insn_bytes(curr, hvmemul_ctxt->insn_buf) ?:
@@ -1706,15 +1716,6 @@ static int _hvm_emulate_one(struct hvm_emulate_ctxt *hvmemul_ctxt,
     {
         hvmemul_ctxt->insn_buf_bytes = vio->mmio_insn_bytes;
         memcpy(hvmemul_ctxt->insn_buf, vio->mmio_insn, vio->mmio_insn_bytes);
-    }
-
-    /* We overwrite portions of the buffer now with the provided code */
-    if ( unlikely(hvmemul_ctxt->set_context_insn) )
-    {
-        unsigned int safe_size = min(hvmemul_ctxt->insn_buf_bytes,
-                                     curr->arch.vm_event->emul_buffer.size);
-
-        memcpy(hvmemul_ctxt->insn_buf, curr->arch.vm_event->emul_buffer.data, safe_size);
     }
 
     hvmemul_ctxt->exn_pending = 0;
@@ -1792,6 +1793,8 @@ void hvm_mem_access_emulate_one(enum emul_kind kind, unsigned int trapnr,
 {
     struct hvm_emulate_ctxt ctx = {{ 0 }};
     int rc;
+
+    gdprintk(XENLOG_WARNING, "memaccess emulate one called\n");
 
     hvm_emulate_prepare(&ctx, guest_cpu_user_regs());
 

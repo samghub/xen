@@ -68,8 +68,6 @@ void vm_event_toggle_singlestep(struct domain *d, struct vcpu *v)
 
 void vm_event_interrupt_emulate_check(struct vcpu *v, vm_event_response_t *rsp)
 {
-    gdprintk(XENLOG_WARNING, "Checking flags on int3 response %u\n", rsp->flags);
-
     if ( !!(rsp->flags & VM_EVENT_FLAG_EMULATE) &&
          !!(rsp->flags & VM_EVENT_FLAG_SET_EMUL_INSN_DATA) )
     {

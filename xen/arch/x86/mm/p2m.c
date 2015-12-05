@@ -1615,7 +1615,10 @@ void p2m_mem_access_emulate_check(struct vcpu *v,
         v->arch.vm_event->emulate_flags = violation ? rsp->flags : 0;
 
         if ( !!(rsp->flags & VM_EVENT_FLAG_SET_EMUL_READ_DATA) )
+        {
+            gdprintk(XENLOG_WARNING, "Mem access emulate check setting emul read data buffer\n");
             v->arch.vm_event->emul_buffer = rsp->data.emul_buffer;
+        }
     }
 }
 

@@ -3076,7 +3076,8 @@ void vmx_vmexit_handler(struct cpu_user_regs *regs)
                      !!(v->arch.vm_event->emulate_flags
                         & VM_EVENT_FLAG_SET_EMUL_INSN_DATA) )
                 {
-                    hvm_mem_access_emulate_one(EMUL_KIND_SET_CONTEXT_INSN, TRAP_invalid_op,
+                    hvm_mem_access_emulate_one(EMUL_KIND_SET_CONTEXT_INSN,
+                                               TRAP_invalid_op,
                                                HVM_DELIVER_NO_ERROR_CODE);
                     v->arch.vm_event->emulate_flags = 0;
                     break;
