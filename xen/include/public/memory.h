@@ -423,11 +423,20 @@ struct xen_mem_access_op {
     /* xenmem_access_t */
     uint8_t access;
     domid_t domid;
-    /*
-     * Number of pages for set op
-     * Ignored on setting default access and other ops
-     */
-    uint32_t nr;
+    union {
+        /*
+         * Number of pages for set op
+         * Ignored on setting default access and other ops
+         */
+        uint32_t nr;
+        /*
+         * altp2m id used for get op, ignored for other ops
+         */
+        struct altp2m {
+            uint16_t idx;
+            uint16_t pad;
+        } altp2m;
+    } u;
     /*
      * First pfn for set op
      * pfn for get op

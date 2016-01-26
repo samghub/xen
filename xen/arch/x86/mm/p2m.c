@@ -1572,7 +1572,9 @@ void p2m_mem_access_emulate_check(struct vcpu *v,
         bool_t violation = 1;
         const struct vm_event_mem_access *data = &rsp->u.mem_access;
 
-        if ( p2m_get_mem_access(v->domain, _gfn(data->gfn), &access) == 0 )
+        if ( p2m_get_mem_access(v->domain, _gfn(data->gfn),
+                                altp2m_active(v->domain) ? vcpu_altp2m(v).p2midx : 0,
+                                &access) == 0 )
         {
             switch ( access )
             {
@@ -1917,7 +1919,8 @@ long p2m_set_mem_access(struct domain *d, gfn_t gfn, uint32_t nr,
  * Get access type for a gfn.
  * If gfn == INVALID_GFN, gets the default access type.
  */
-int p2m_get_mem_access(struct domain *d, gfn_t gfn, xenmem_access_t *access)
+int p2m_get_mem_access(struct domain *d, gfn_t gfn, unsigned int altp2m_idx,
+                       xenmem_access_t *access)
 {
     struct p2m_domain *p2m = p2m_get_hostp2m(d);
     p2m_type_t t;
@@ -1944,6 +1947,16 @@ int p2m_get_mem_access(struct domain *d, gfn_t gfn, xenmem_access_t *access)
     {
         *access = memaccess[p2m->default_access];
         return 0;
+    }
+
+    /* altp2m view 0 is treated as the hostp2m */
+    if ( altp2m_idx )
+    {
+        if ( altp2m_idx >= MAX_ALTP2M ||
+             d->arch.altp2m_eptp[altp2m_idx] == INVALID_MFN )
+            return -EINVAL;
+
+        p2m = d->arch.altp2m_p2m[altp2m_idx];
     }
 
     gfn_lock(p2m, gfn, 0);

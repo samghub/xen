@@ -56,6 +56,7 @@ long p2m_set_mem_access(struct domain *d, gfn_t gfn, uint32_t nr,
  * Get access type for a gfn.
  * If gfn == INVALID_GFN, gets the default access type.
  */
-int p2m_get_mem_access(struct domain *d, gfn_t gfn, xenmem_access_t *access);
+int p2m_get_mem_access(struct domain *d, gfn_t gfn, unsigned int altp2m_idx,
+                       xenmem_access_t *access);
 
 #endif /* _XEN_P2M_COMMON_H */

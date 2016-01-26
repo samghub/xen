@@ -1666,7 +1666,7 @@ bool_t p2m_mem_access_check(paddr_t gpa, vaddr_t gla, const struct npfec npfec)
     if ( !p2m->mem_access_enabled )
         return true;
 
-    rc = p2m_get_mem_access(v->domain, _gfn(paddr_to_pfn(gpa)), &xma);
+    rc = p2m_get_mem_access(v->domain, _gfn(paddr_to_pfn(gpa)), 0, &xma);
     if ( rc )
         return true;
 
@@ -1847,7 +1847,7 @@ long p2m_set_mem_access(struct domain *d, gfn_t gfn, uint32_t nr,
     return 0;
 }
 
-int p2m_get_mem_access(struct domain *d, gfn_t gfn,
+int p2m_get_mem_access(struct domain *d, gfn_t gfn, unsigned int altp2m_idx,
                        xenmem_access_t *access)
 {
     int ret;

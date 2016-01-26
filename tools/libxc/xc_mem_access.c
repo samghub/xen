@@ -35,7 +35,7 @@ int xc_set_mem_access(xc_interface *xch,
         .domid  = domain_id,
         .access = access,
         .pfn    = first_pfn,
-        .nr     = nr
+        .u.nr   = nr
     };
 
     return do_memory_op(xch, XENMEM_access_op, &mao, sizeof(mao));
@@ -44,14 +44,16 @@ int xc_set_mem_access(xc_interface *xch,
 int xc_get_mem_access(xc_interface *xch,
                       domid_t domain_id,
                       uint64_t pfn,
+                      uint16_t altp2m_idx,
                       xenmem_access_t *access)
 {
     int rc;
     xen_mem_access_op_t mao =
     {
-        .op    = XENMEM_access_op_get_access,
-        .domid = domain_id,
-        .pfn   = pfn
+        .op           = XENMEM_access_op_get_access,
+        .domid        = domain_id,
+        .pfn          = pfn,
+        .u.altp2m.idx = altp2m_idx
     };
 
     rc = do_memory_op(xch, XENMEM_access_op, &mao, sizeof(mao));

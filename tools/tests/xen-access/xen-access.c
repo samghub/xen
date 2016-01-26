@@ -586,9 +586,12 @@ int main(int argc, char *argv[])
                     /*
                      * This serves no other purpose here then demonstrating the use of the API.
                      * At shutdown we have already reset all the permissions so really no use getting it again.
+                     * At shutdown the altp2m view is already destroyed so this query would fail.
                      */
                     xenmem_access_t access;
-                    rc = xc_get_mem_access(xch, domain_id, req.u.mem_access.gfn, &access);
+                    rc = xc_get_mem_access(xch, domain_id, req.u.mem_access.gfn,
+                                           ((req.flags & VM_EVENT_FLAG_ALTERNATE_P2M) ? req.altp2m_idx : 0),
+                                           &access);
                     if (rc < 0)
                     {
                         ERROR("Error %d getting mem_access event\n", rc);

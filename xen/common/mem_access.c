@@ -61,12 +61,12 @@ int mem_access_memop(unsigned long cmd,
     case XENMEM_access_op_set_access:
         rc = -EINVAL;
         if ( (mao.pfn != ~0ull) &&
-             (mao.nr < start_iter ||
-              ((mao.pfn + mao.nr - 1) < mao.pfn) ||
-              ((mao.pfn + mao.nr - 1) > domain_get_maximum_gpfn(d))) )
+             (mao.u.nr < start_iter ||
+              ((mao.pfn + mao.u.nr - 1) < mao.pfn) ||
+              ((mao.pfn + mao.u.nr - 1) > domain_get_maximum_gpfn(d))) )
             break;
 
-        rc = p2m_set_mem_access(d, _gfn(mao.pfn), mao.nr, start_iter,
+        rc = p2m_set_mem_access(d, _gfn(mao.pfn), mao.u.nr, start_iter,
                                 MEMOP_CMD_MASK, mao.access, 0);
         if ( rc > 0 )
         {
@@ -88,7 +88,7 @@ int mem_access_memop(unsigned long cmd,
         if ( (mao.pfn > domain_get_maximum_gpfn(d)) && mao.pfn != ~0ull )
             break;
 
-        rc = p2m_get_mem_access(d, _gfn(mao.pfn), &access);
+        rc = p2m_get_mem_access(d, _gfn(mao.pfn), mao.u.altp2m.idx, &access);
         if ( rc != 0 )
             break;
 

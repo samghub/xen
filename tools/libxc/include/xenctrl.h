@@ -2068,7 +2068,8 @@ int xc_set_mem_access(xc_interface *xch, domid_t domain_id,
  * Gets the mem access for the given page (returned in access on success)
  */
 int xc_get_mem_access(xc_interface *xch, domid_t domain_id,
-                      uint64_t pfn, xenmem_access_t *access);
+                      uint64_t pfn, uint16_t altp2m_idx,
+                      xenmem_access_t *access);
 
 /*
  * Instructions causing a mem_access violation can be emulated by Xen
