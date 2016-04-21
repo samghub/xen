@@ -1739,11 +1739,10 @@ int p2m_set_altp2m_mem_access(struct domain *d, struct p2m_domain *hp2m,
     /* Check host p2m if no valid entry in alternate */
     if ( !mfn_valid(mfn) )
     {
-        mfn = hp2m->get_entry(hp2m, gfn_l, &t, &old_a,
-                              P2M_ALLOC | P2M_UNSHARE, &page_order, NULL);
+        mfn = hp2m->get_entry(hp2m, gfn_l, &t, &old_a, 0, &page_order, NULL);
 
         rc = -ESRCH;
-        if ( !mfn_valid(mfn) || t != p2m_ram_rw )
+        if ( !mfn_valid(mfn) || (t != p2m_ram_rw && t != p2m_ram_shared) )
             return rc;
 
         /* If this is a superpage, copy that first */
@@ -1760,7 +1759,7 @@ int p2m_set_altp2m_mem_access(struct domain *d, struct p2m_domain *hp2m,
     }
 
     return ap2m->set_entry(ap2m, gfn_l, mfn, PAGE_ORDER_4K, t, a,
-                         (current->domain != d));
+                           (current->domain != d));
 }
 
 /*
@@ -2250,6 +2249,7 @@ bool_t p2m_switch_vcpu_altp2m_by_id(struct vcpu *v, unsigned int idx)
             atomic_inc(&p2m_get_altp2m(v)->active_vcpus);
             altp2m_vcpu_update_p2m(v);
         }
+
         rc = 1;
     }
 

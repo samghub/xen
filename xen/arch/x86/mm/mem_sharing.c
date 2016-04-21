@@ -35,6 +35,7 @@
 #include <asm/p2m.h>
 #include <asm/atomic.h>
 #include <asm/event.h>
+#include <asm/altp2m.h>
 #include <xsm/xsm.h>
 
 #include "mm-locks.h"
@@ -1026,6 +1027,10 @@ int mem_sharing_share_pages(struct domain *sd, unsigned long sgfn, shr_handle_t 
     /* We managed to free a domain page. */
     atomic_dec(&nr_shared_mfns);
     atomic_inc(&nr_saved_mfns);
+
+    if( altp2m_active(cd) )
+        p2m_altp2m_propagate_change(cd, _gfn(cgfn), smfn, PAGE_ORDER_4K, p2m_ram_shared, p2m_get_hostp2m(cd)->default_access);
+
     ret = 0;
     
 err_out:
