@@ -156,3 +156,18 @@ int xc_monitor_emulate_each_rep(xc_interface *xch, domid_t domain_id,
 
     return do_domctl(xch, &domctl);
 }
+
+int xc_monitor_debug_exceptions(xc_interface *xch, domid_t domain_id,
+                                bool enable, bool sync)
+{
+    DECLARE_DOMCTL;
+
+    domctl.cmd = XEN_DOMCTL_monitor_op;
+    domctl.domain = domain_id;
+    domctl.u.monitor_op.op = enable ? XEN_DOMCTL_MONITOR_OP_ENABLE
+                                    : XEN_DOMCTL_MONITOR_OP_DISABLE;
+    domctl.u.monitor_op.event = XEN_DOMCTL_MONITOR_EVENT_DEBUG_EXCEPTION;
+    domctl.u.monitor_op.u.debug_exception.sync = sync;
+
+    return do_domctl(xch, &domctl);
+}

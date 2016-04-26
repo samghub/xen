@@ -119,6 +119,8 @@
 #define VM_EVENT_REASON_SINGLESTEP              7
 /* An event has been requested via HVMOP_guest_request_vm_event. */
 #define VM_EVENT_REASON_GUEST_REQUEST           8
+/* A debug exception was caught */
+#define VM_EVENT_REASON_DEBUG_EXCEPTION         9
 
 /* Supported values for the vm_event_write_ctrlreg index. */
 #define VM_EVENT_X86_CR0    0
@@ -203,8 +205,15 @@ struct vm_event_write_ctrlreg {
     uint64_t old_value;
 };
 
+struct vm_event_singlestep {
+    uint64_t gfn;
+};
+
 struct vm_event_debug {
     uint64_t gfn;
+    uint8_t type;        /* HVMOP_TRAP_* */
+    uint8_t insn_length;
+    uint8_t _pad[6];
 };
 
 struct vm_event_mov_to_msr {
@@ -248,7 +257,8 @@ typedef struct vm_event_st {
         struct vm_event_write_ctrlreg         write_ctrlreg;
         struct vm_event_mov_to_msr            mov_to_msr;
         struct vm_event_debug                 software_breakpoint;
-        struct vm_event_debug                 singlestep;
+        struct vm_event_singlestep            singlestep;
+        struct vm_event_debug                 debug_exception;
     } u;
 
     union {

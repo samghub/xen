@@ -3373,9 +3373,25 @@ void vmx_vmexit_handler(struct cpu_user_regs *regs)
             HVMTRACE_1D(TRAP_DEBUG, exit_qualification);
             write_debugreg(6, exit_qualification | DR_STATUS_RESERVED_ONE);
             if ( !v->domain->debugger_attached )
-                vmx_propagate_intr(intr_info);
+            {
+                unsigned long insn_length = 0;
+                int handled;
+                unsigned long trap_type = MASK_EXTR(intr_info,
+                                                    INTR_INFO_INTR_TYPE_MASK);
+
+                if( trap_type >= X86_EVENTTYPE_SW_INTERRUPT )
+                    __vmread(VM_EXIT_INSTRUCTION_LEN, &insn_length);
+
+                handled = hvm_monitor_debug(regs->eip,
+                                            HVM_MONITOR_DEBUG_EXCEPTION,
+                                            trap_type, insn_length);
+                if ( handled <= 0 )
+                    vmx_propagate_intr(intr_info);
+
+            }
             else
                 domain_pause_for_debugger();
+
             break;
         case TRAP_int3: 
         {
@@ -3389,8 +3405,9 @@ void vmx_vmexit_handler(struct cpu_user_regs *regs)
             }
             else {
                 int handled =
-                    hvm_monitor_breakpoint(regs->eip,
-                                           HVM_MONITOR_SOFTWARE_BREAKPOINT);
+                        hvm_monitor_debug(regs->eip,
+                                          HVM_MONITOR_SOFTWARE_BREAKPOINT,
+                                          X86_EVENTTYPE_SW_EXCEPTION, 1);
 
                 if ( handled < 0 ) 
                 {
@@ -3717,8 +3734,7 @@ void vmx_vmexit_handler(struct cpu_user_regs *regs)
         vmx_update_cpu_exec_control(v);
         if ( v->arch.hvm_vcpu.single_step )
         {
-            hvm_monitor_breakpoint(regs->eip,
-                                   HVM_MONITOR_SINGLESTEP_BREAKPOINT);
+            hvm_monitor_debug(regs->eip, HVM_MONITOR_SINGLESTEP_BREAKPOINT, 0, 0);
             if ( v->domain->debugger_attached )
                 domain_pause_for_debugger();
         }
