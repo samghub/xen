@@ -818,26 +818,9 @@ int vm_event_monitor_traps(struct vcpu *v, uint8_t sync,
         req->altp2m_idx = altp2m_vcpu_idx(v);
     }
 
-    vm_event_fill_regs(req);
     vm_event_put_request(d, &d->vm_event->monitor, req);
 
     return 1;
-}
-
-void vm_event_monitor_guest_request(void)
-{
-    struct vcpu *curr = current;
-    struct domain *d = curr->domain;
-
-    if ( d->monitor.guest_request_enabled )
-    {
-        vm_event_request_t req = {
-            .reason = VM_EVENT_REASON_GUEST_REQUEST,
-            .vcpu_id = curr->vcpu_id,
-        };
-
-        vm_event_monitor_traps(curr, d->monitor.guest_request_sync, &req);
-    }
 }
 
 /*
