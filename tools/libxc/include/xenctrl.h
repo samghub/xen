@@ -2160,6 +2160,8 @@ int xc_monitor_software_breakpoint(xc_interface *xch, domid_t domain_id,
                                    bool enable);
 int xc_monitor_guest_request(xc_interface *xch, domid_t domain_id,
                              bool enable, bool sync);
+int xc_monitor_privileged_call(xc_interface *xch, domid_t domain_id,
+                               bool enable);
 
 /**
  * This function enables / disables emulation for each REP for a
