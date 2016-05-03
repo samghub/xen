@@ -41,6 +41,7 @@ obj-y += decode.o
 obj-y += processor.o
 obj-y += smc.o
 obj-$(CONFIG_XSPLICE) += xsplice.o
+obj-y += monitor.o
 
 #obj-bin-y += ....o
 

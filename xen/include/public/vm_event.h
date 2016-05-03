@@ -119,6 +119,8 @@
 #define VM_EVENT_REASON_SINGLESTEP              7
 /* An event has been requested via HVMOP_guest_request_vm_event. */
 #define VM_EVENT_REASON_GUEST_REQUEST           8
+/* Privileged call executed (e.g. SMC) */
+#define VM_EVENT_REASON_PRIVILEGED_CALL         9
 
 /* Supported values for the vm_event_write_ctrlreg index. */
 #define VM_EVENT_X86_CR0    0
@@ -212,6 +214,13 @@ struct vm_event_mov_to_msr {
     uint64_t value;
 };
 
+#define VM_EVENT_PRIVCALL_SMC   0
+
+struct vm_event_privcall {
+    uint32_t type;
+    uint32_t vector; /* ESR_EL2.ISS for SMC calls */
+};
+
 #define MEM_PAGING_DROP_PAGE       (1 << 0)
 #define MEM_PAGING_EVICT_FAIL      (1 << 1)
 
@@ -249,6 +258,7 @@ typedef struct vm_event_st {
         struct vm_event_mov_to_msr            mov_to_msr;
         struct vm_event_debug                 software_breakpoint;
         struct vm_event_debug                 singlestep;
+        struct vm_event_privcall              privcall;
     } u;
 
     union {
