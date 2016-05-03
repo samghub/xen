@@ -129,8 +129,8 @@
 #define VM_EVENT_X86_XCR0   3
 
 /*
- * Using a custom struct (not hvm_hw_cpu) so as to not fill
- * the vm_event ring buffer too quickly.
+ * Using custom vCPU structs (i.e. not hvm_hw_cpu) for both x86 and ARM
+ * so as to not fill the vm_event ring buffer too quickly.
  */
 struct vm_event_regs_x86 {
     uint64_t rax;
@@ -166,6 +166,71 @@ struct vm_event_regs_x86 {
     uint64_t gs_base;
     uint32_t cs_arbytes;
     uint32_t _pad;
+};
+
+struct vm_event_regs_arm32 {
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r4;
+    uint32_t r5;
+    uint32_t r6;
+    uint32_t r7;
+    uint32_t r8;
+    uint32_t r9;
+    uint32_t r10;
+    uint32_t r11;
+    uint32_t r12;
+    uint32_t r13;
+    uint32_t r14;
+    uint32_t pc;
+};
+
+struct vm_event_regs_arm64 {
+    uint64_t x0;
+    uint64_t x1;
+    uint64_t x2;
+    uint64_t x3;
+    uint64_t x4;
+    uint64_t x5;
+    uint64_t x6;
+    uint64_t x7;
+    uint64_t x8;
+    uint64_t x9;
+    uint64_t x10;
+    uint64_t x11;
+    uint64_t x12;
+    uint64_t x13;
+    uint64_t x14;
+    uint64_t x15;
+    uint64_t x16;
+    uint64_t x17;
+    uint64_t x18;
+    uint64_t x19;
+    uint64_t x20;
+    uint64_t x21;
+    uint64_t x22;
+    uint64_t x23;
+    uint64_t x24;
+    uint64_t x25;
+    uint64_t x26;
+    uint64_t x27;
+    uint64_t x28;
+    uint64_t x29;
+    uint64_t x30;
+    uint64_t pc;
+};
+
+struct vm_event_regs_arm {
+    uint32_t cpsr; /* PSR_MODE_BIT is set iff arm32 is used below */
+    uint32_t _pad;
+    uint64_t ttbr0;
+    uint64_t ttbr1;
+    union {
+        struct vm_event_regs_arm32 arm32;
+        struct vm_event_regs_arm64 arm64;
+    } arch;
 };
 
 /*
@@ -236,10 +301,14 @@ struct vm_event_sharing {
     uint32_t _pad;
 };
 
+#define VM_EVENT_MAX_DATA_SIZE \
+    (sizeof(struct vm_event_regs_x86) > sizeof(struct vm_event_regs_arm) ? \
+        sizeof(struct vm_event_regs_x86) : sizeof(struct vm_event_regs_arm))
+
 struct vm_event_emul_read_data {
     uint32_t size;
     /* The struct is used in a union with vm_event_regs_x86. */
-    uint8_t  data[sizeof(struct vm_event_regs_x86) - sizeof(uint32_t)];
+    uint8_t  data[VM_EVENT_MAX_DATA_SIZE - sizeof(uint32_t)];
 };
 
 typedef struct vm_event_st {
@@ -264,6 +333,7 @@ typedef struct vm_event_st {
     union {
         union {
             struct vm_event_regs_x86 x86;
+            struct vm_event_regs_arm arm;
         } regs;
 
         struct vm_event_emul_read_data emul_read_data;
