@@ -119,6 +119,8 @@
 #define VM_EVENT_REASON_SINGLESTEP              7
 /* An event has been requested via HVMOP_guest_request_vm_event. */
 #define VM_EVENT_REASON_GUEST_REQUEST           8
+/* Privileged call executed (e.g. SMC) */
+#define VM_EVENT_REASON_PRIVILEGED_CALL         9
 
 /* Supported values for the vm_event_write_ctrlreg index. */
 #define VM_EVENT_X86_CR0    0
