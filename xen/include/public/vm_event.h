@@ -29,7 +29,7 @@
 
 #include "xen.h"
 
-#define VM_EVENT_INTERFACE_VERSION 0x00000001
+#define VM_EVENT_INTERFACE_VERSION 0x00000002
 
 #if defined(__XEN__) || defined(__XEN_TOOLS__)
 
@@ -121,6 +121,8 @@
 #define VM_EVENT_REASON_GUEST_REQUEST           8
 /* Privileged call executed (e.g. SMC) */
 #define VM_EVENT_REASON_PRIVILEGED_CALL         9
+/* A debug exception was caught */
+#define VM_EVENT_REASON_DEBUG_EXCEPTION         10
 
 /* Supported values for the vm_event_write_ctrlreg index. */
 #define VM_EVENT_X86_CR0    0
@@ -270,8 +272,15 @@ struct vm_event_write_ctrlreg {
     uint64_t old_value;
 };
 
+struct vm_event_singlestep {
+    uint64_t gfn;
+};
+
 struct vm_event_debug {
     uint64_t gfn;
+    uint8_t type;        /* HVMOP_TRAP_* */
+    uint8_t insn_length;
+    uint8_t _pad[6];
 };
 
 struct vm_event_mov_to_msr {
@@ -326,7 +335,8 @@ typedef struct vm_event_st {
         struct vm_event_write_ctrlreg         write_ctrlreg;
         struct vm_event_mov_to_msr            mov_to_msr;
         struct vm_event_debug                 software_breakpoint;
-        struct vm_event_debug                 singlestep;
+        struct vm_event_singlestep            singlestep;
+        struct vm_event_debug                 debug_exception;
         struct vm_event_privcall              privcall;
     } u;
 
