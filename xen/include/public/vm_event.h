@@ -168,6 +168,55 @@ struct vm_event_regs_x86 {
     uint32_t _pad;
 };
 
+struct vm_event_regs_arm {
+    union {
+        struct {
+            uint64_t r0_usr;
+            uint64_t r1_usr;
+            uint64_t r2_usr;
+            uint64_t r3_usr;
+            uint64_t r4_usr;
+            uint64_t r5_usr;
+            uint64_t r6_usr;
+            uint64_t r7_usr;
+            uint64_t r8_usr;
+            uint64_t r9_usr;
+            uint64_t r10_usr;
+            uint64_t lr_usr;
+            uint64_t sp_usr;
+            uint64_t sp_svc;
+            uint32_t spsr_svc;
+            uint64_t fp;
+            uint64_t pc;
+            uint32_t cpsr;
+            uint64_t ttbr0;
+            uint64_t ttbr1;
+        } arm32;
+        struct {
+            uint64_t x0;
+            uint64_t x1;
+            uint64_t x2;
+            uint64_t x3;
+            uint64_t x4;
+            uint64_t x5;
+            uint64_t x6;
+            uint64_t x7;
+            uint64_t x8;
+            uint64_t x9;
+            uint64_t x10;
+            uint64_t lr;
+            uint64_t sp_el0;
+            uint64_t sp_el1;
+            uint32_t spsr_el1;
+            uint64_t fp;
+            uint64_t pc;
+            uint32_t cpsr;
+            uint64_t ttbr0;
+            uint64_t ttbr1;
+        } arm64;
+    } aarch;
+};
+
 /*
  * mem_access flag definitions
  *

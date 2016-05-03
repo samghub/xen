@@ -54,9 +54,8 @@ void vm_event_set_registers(struct vcpu *v, vm_event_response_t *rsp)
     /* Not supported on ARM. */
 }
 
-static inline void vm_event_fill_regs(vm_event_request_t *req)
-{
-    /* Not supported on ARM. */
-}
+void vm_event_fill_regs(vm_event_request_t *req,
+                        const struct cpu_user_regs *regs,
+                        struct domain *d);
 
 #endif /* __ASM_ARM_VM_EVENT_H__ */

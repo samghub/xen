@@ -41,6 +41,7 @@ obj-y += decode.o
 obj-y += processor.o
 obj-y += smc.o
 obj-y += monitor.o
+obj-y += vm_event.o
 
 #obj-bin-y += ....o
 
