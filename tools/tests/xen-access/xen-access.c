@@ -1,4 +1,3 @@
-/*
  * xen-access.c
  *
  * Exercises the basic per-page access mechanisms
@@ -334,6 +333,8 @@ void usage(char* progname)
     fprintf(stderr, "Usage: %s [-m] <domain_id> write|exec", progname);
 #if defined(__i386__) || defined(__x86_64__)
             fprintf(stderr, "|breakpoint|altp2m_write|altp2m_exec");
+#elif defined(__arm__) || defined(__aarch64__)
+            fprintf(stderr, "|privcall");
 #endif
             fprintf(stderr,
             "\n"
@@ -357,6 +358,7 @@ int main(int argc, char *argv[])
     int required = 0;
     int breakpoint = 0;
     int shutting_down = 0;
+    int privcall = 0;
     int altp2m = 0;
     uint16_t altp2m_view_id = 0;
 
@@ -411,6 +413,11 @@ int main(int argc, char *argv[])
     {
         default_access = XENMEM_access_rw;
         altp2m = 1;
+    }
+#elif defined(__arm__) || defined(__aarch64__)
+    else if ( !strcmp(argv[0], "privcall") )
+    {
+        privcall = 1;
     }
 #endif
     else
@@ -524,6 +531,16 @@ int main(int argc, char *argv[])
         }
     }
 
+    if ( privcall )
+    {
+        rc = xc_monitor_privileged_call(xch, domain_id, 1);
+        if ( rc < 0 )
+        {
+            ERROR("Error %d setting privileged call trapping with vm_event\n", rc);
+            goto exit;
+        }
+    }
+
     /* Wait for access */
     for (;;)
     {
@@ -534,6 +551,9 @@ int main(int argc, char *argv[])
 
             if ( breakpoint )
                 rc = xc_monitor_software_breakpoint(xch, domain_id, 0);
+
+            if ( privcall )
+                rc = xc_monitor_privileged_call(xch, domain_id, 0);
 
             if ( altp2m )
             {
@@ -635,7 +655,7 @@ int main(int argc, char *argv[])
                 rsp.u.mem_access = req.u.mem_access;
                 break;
             case VM_EVENT_REASON_SOFTWARE_BREAKPOINT:
-                printf("Breakpoint: rip=%016"PRIx64", gfn=%"PRIx64" (vcpu %d)\n",
+                printf("Breakpoint: rip=%"PRIx64" gfn=%"PRIx64" (vcpu %d)\n",
                        req.data.regs.x86.rip,
                        req.u.software_breakpoint.gfn,
                        req.vcpu_id);
@@ -650,7 +670,15 @@ int main(int argc, char *argv[])
                     interrupted = -1;
                     continue;
                 }
+                break;
+            case VM_EVENT_REASON_PRIVILEGED_CALL:
+                printf("Privileged call: pc=%"PRIx64" (vcpu %d)\n",
+                       req.data.regs.arm.pc,
+                       req.vcpu_id);
 
+                rsp.data.regs.arm = req.data.regs.arm;
+                rsp.data.regs.arm.pc += 4;
+                rsp.flags |= VM_EVENT_FLAG_SET_REGISTERS;
                 break;
             case VM_EVENT_REASON_SINGLESTEP:
                 printf("Singlestep: rip=%016"PRIx64", vcpu %d, altp2m %u\n",
