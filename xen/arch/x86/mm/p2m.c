@@ -1768,10 +1768,10 @@ int p2m_set_altp2m_mem_access(struct domain *d, struct p2m_domain *hp2m,
     if ( !mfn_valid(mfn) )
     {
         mfn = hp2m->get_entry(hp2m, gfn_l, &t, &old_a,
-                              P2M_ALLOC | P2M_UNSHARE, &page_order, NULL);
+                              0, &page_order, NULL);
 
         rc = -ESRCH;
-        if ( !mfn_valid(mfn) || t != p2m_ram_rw )
+        if ( !mfn_valid(mfn) || (t != p2m_ram_rw && t != p2m_ram_shared) )
             return rc;
 
         /* If this is a superpage, copy that first */
@@ -2542,9 +2542,9 @@ int p2m_change_altp2m_gfn(struct domain *d, unsigned int idx,
     if ( !mfn_valid(mfn) )
     {
         mfn = hp2m->get_entry(hp2m, gfn_x(old_gfn), &t, &a,
-                              P2M_ALLOC | P2M_UNSHARE, &page_order, NULL);
+                              P2M_ALLOC, &page_order, NULL);
 
-        if ( !mfn_valid(mfn) || t != p2m_ram_rw )
+        if ( !mfn_valid(mfn) || (t != p2m_ram_rw && t != p2m_ram_shared) )
             goto out;
 
         /* If this is a superpage, copy that first */
@@ -2567,7 +2567,7 @@ int p2m_change_altp2m_gfn(struct domain *d, unsigned int idx,
     if ( !mfn_valid(mfn) )
         mfn = hp2m->get_entry(hp2m, gfn_x(new_gfn), &t, &a, 0, NULL, NULL);
 
-    if ( !mfn_valid(mfn) || (t != p2m_ram_rw) )
+    if ( !mfn_valid(mfn) || (t != p2m_ram_rw && t != p2m_ram_shared) )
         goto out;
 
     if ( !ap2m->set_entry(ap2m, gfn_x(old_gfn), mfn, PAGE_ORDER_4K, t, a,
