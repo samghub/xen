@@ -338,6 +338,8 @@ void usage(char* progname)
     fprintf(stderr, "Usage: %s [-m] <domain_id> write|exec", progname);
 #if defined(__i386__) || defined(__x86_64__)
             fprintf(stderr, "|breakpoint|altp2m_write|altp2m_exec|debug");
+#elif defined(__arm__) || defined(__aarch64__)
+            fprintf(stderr, "|privcall");
 #endif
             fprintf(stderr,
             "\n"
@@ -425,6 +427,11 @@ int main(int argc, char *argv[])
     else if ( !strcmp(argv[0], "debug") )
     {
         debug = 1;
+    }
+#elif defined(__arm__) || defined(__aarch64__)
+    else if ( !strcmp(argv[0], "privcall") )
+    {
+        privcall = 1;
     }
 #endif
     else
@@ -548,6 +555,16 @@ int main(int argc, char *argv[])
         }
     }
 
+    if ( privcall )
+    {
+        rc = xc_monitor_privileged_call(xch, domain_id, 1);
+        if ( rc < 0 )
+        {
+            ERROR("Error %d setting privileged call trapping with vm_event\n", rc);
+            goto exit;
+        }
+    }
+
     /* Wait for access */
     for (;;)
     {
@@ -560,7 +577,8 @@ int main(int argc, char *argv[])
                 rc = xc_monitor_software_breakpoint(xch, domain_id, 0);
             if ( debug )
                 rc = xc_monitor_debug_exceptions(xch, domain_id, 0, 0);
-
+            if ( privcall )
+                rc = xc_monitor_privileged_call(xch, domain_id, 0);
             if ( altp2m )
             {
                 rc = xc_altp2m_switch_to_view( xch, domain_id, 0 );
@@ -716,6 +734,31 @@ int main(int argc, char *argv[])
                 }
 
                 break;
+#if defined(__arm__) || defined(__aarch64__)
+            case VM_EVENT_REASON_PRIVILEGED_CALL:
+                {
+                    const struct vm_event_regs_arm *in_regs = &req.data.regs.arm;
+                    struct vm_event_regs_arm *out_regs = &rsp.data.regs.arm;
+                    bool is32bit = !!(in_regs->cpsr & PSR_MODE_BIT);
+                    uint64_t pc;
+
+                    *out_regs = *in_regs;
+
+                    if ( is32bit ) {
+                        pc = in_regs->arch.arm32.pc;
+                        out_regs->arch.arm32.pc += 4;
+                    } else {
+                        pc = in_regs->arch.arm64.pc;
+                        out_regs->arch.arm64.pc += 8;
+                    }
+
+                    printf("Privileged call: pc=%016"PRIx64" (vcpu %d)\n",
+                           pc, req.vcpu_id);
+
+                    rsp.flags |= VM_EVENT_FLAG_SET_REGISTERS;
+                }
+                break;
+#endif
             default:
                 fprintf(stderr, "UNKNOWN REASON CODE %d\n", req.reason);
             }
