@@ -48,7 +48,7 @@ bool_t hvm_monitor_cr(unsigned int index, unsigned long value, unsigned long old
             .u.write_ctrlreg.old_value = old
         };
 
-        if ( vm_event_monitor_traps(curr, sync, &req) >= 0 )
+        if ( monitor_traps(curr, sync, &req) >= 0 )
             return 1;
     }
 
@@ -68,7 +68,7 @@ void hvm_monitor_msr(unsigned int msr, uint64_t value)
             .u.mov_to_msr.value = value,
         };
 
-        vm_event_monitor_traps(curr, 1, &req);
+        monitor_traps(curr, 1, &req);
     }
 }
 
@@ -131,7 +131,7 @@ int hvm_monitor_debug(unsigned long rip, enum hvm_monitor_debug_type type,
 
     req.vcpu_id = curr->vcpu_id;
 
-    return vm_event_monitor_traps(curr, sync, &req);
+    return monitor_traps(curr, sync, &req);
 }
 
 /*

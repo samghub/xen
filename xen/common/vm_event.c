@@ -787,50 +787,6 @@ void vm_event_vcpu_unpause(struct vcpu *v)
 }
 
 /*
- * Monitor vm-events
- */
-
-int vm_event_monitor_traps(struct vcpu *v, uint8_t sync,
-                           vm_event_request_t *req)
-{
-    int rc;
-    struct domain *d = v->domain;
-
-    rc = vm_event_claim_slot(d, &d->vm_event->monitor);
-    switch ( rc )
-    {
-    case 0:
-        break;
-    case -ENOSYS:
-        /*
-         * If there was no ring to handle the event, then
-         * simply continue executing normally.
-         */
-        return 0;
-    default:
-        return rc;
-    };
-
-    if ( sync )
-    {
-        req->flags |= VM_EVENT_FLAG_VCPU_PAUSED;
-        vm_event_vcpu_pause(v);
-        rc = 1;
-    }
-
-    if ( altp2m_active(d) )
-    {
-        req->flags |= VM_EVENT_FLAG_ALTERNATE_P2M;
-        req->altp2m_idx = altp2m_vcpu_idx(v);
-    }
-
-    vm_event_fill_regs(req);
-    vm_event_put_request(d, &d->vm_event->monitor, req);
-
-    return rc;
-}
-
-/*
  * Local variables:
  * mode: C
  * c-file-style: "BSD"
